@@ -1,52 +1,106 @@
 
-import os
-import shutil
-from pathlib import Path
-
-CATEGORIES = {
-    "Images": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
-    "Videos": [".mp4", ".mkv", ".mov", ".avi"],
-    "Documents": [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".pptx"],
-    "Audio": [".mp3", ".wav", ".aac", ".flac"],
-    "Archives": [".zip", ".rar", ".7z", ".tar", ".gz"],
-    "Code": [".py", ".js", ".ts", ".html", ".css", ".java", ".cpp"]
-}
+import secrets
+import string
+import math
 
 
-def organize_files(folder_path):
-    folder = Path(folder_path)
+def generate_password(length=16, use_symbols=True):
+    characters = string.ascii_letters + string.digits
 
-    if not folder.exists() or not folder.is_dir():
-        print("Invalid folder path!")
-        return
+    if use_symbols:
+        characters += string.punctuation
 
-    moved = 0
+    password = ''.join(
+        secrets.choice(characters)
+        for _ in range(length)
+    )
 
-    for file in folder.iterdir():
-        if not file.is_file():
-            continue
+    return password
 
-        category = next(
-            (name for name, extensions in CATEGORIES.items()
-             if file.suffix.lower() in extensions),
-            "Others"
-        )
 
-        destination = folder / category
-        destination.mkdir(exist_ok=True)
+def check_strength(password):
+    score = 0
 
-        target = destination / file.name
+    if len(password) >= 8:
+        score += 1
 
-        if target.exists():
-            target = destination / f"{file.stem}_copy{file.suffix}"
+    if len(password) >= 12:
+        score += 1
 
-        shutil.move(str(file), str(target))
-        print(f"Moved: {file.name} -> {category}/")
-        moved += 1
+    if any(c.islower() for c in password):
+        score += 1
 
-    print(f"\nOrganization completed! {moved} files moved.")
+    if any(c.isupper() for c in password):
+        score += 1
+
+    if any(c.isdigit() for c in password):
+        score += 1
+
+    if any(c in string.punctuation for c in password):
+        score += 1
+
+    if score <= 2:
+        return "Weak"
+
+    elif score <= 4:
+        return "Medium"
+
+    return "Strong"
+
+
+def calculate_entropy(password):
+    pool_size = 0
+
+    if any(c.islower() for c in password):
+        pool_size += 26
+
+    if any(c.isupper() for c in password):
+        pool_size += 26
+
+    if any(c.isdigit() for c in password):
+        pool_size += 10
+
+    if any(c in string.punctuation for c in password):
+        pool_size += len(string.punctuation)
+
+    if pool_size == 0:
+        return 0
+
+    return len(password) * math.log2(pool_size)
+
+
+def main():
+    print("=" * 40)
+    print("       PASSWORD GENERATOR")
+    print("=" * 40)
+
+    try:
+        length = int(input("\nEnter password length (minimum 8): "))
+
+        if length < 8:
+            print("Password length must be at least 8.")
+            return
+
+        symbols = input("Include symbols? (y/n): ").lower() == "y"
+
+        password = generate_password(length, symbols)
+
+        print("\nGenerated Password:")
+        print(password)
+
+        strength = check_strength(password)
+        entropy = calculate_entropy(password)
+
+        print("\nPassword Analysis")
+        print("-" * 30)
+        print(f"Length: {length}")
+        print(f"Strength: {strength}")
+        print(f"Estimated entropy: {entropy:.2f} bits")
+        print("-" * 30)
+
+    except ValueError:
+        print("Please enter a valid number.")
 
 
 if __name__ == "__main__":
-    path = input("Enter folder path: ")
-    organize_files(path)
+    main()
