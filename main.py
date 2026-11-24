@@ -18,6 +18,7 @@ def generate_password(length=16, use_symbols=True):
     return password
 
 
+
 def check_strength(password):
     score = 0
 
